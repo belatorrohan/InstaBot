@@ -78,7 +78,7 @@ def comment_on_posts(num_posts=5):
 def main():
     load_cookies_and_navigate()
     search_hashtag('boat')
-    comment_on_posts(num_posts=5)
+    comment_on_posts(num_posts=10)
     driver.quit()
 
 if __name__ == "__main__":
