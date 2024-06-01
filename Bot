@@ -1,0 +1,85 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+import pickle
+import torch
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+# Initialize Chrome driver
+driver = webdriver.Chrome()
+
+# Initialize GPT-2 model and tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+model = GPT2LMHeadModel.from_pretrained('gpt2')
+
+def load_cookies_and_navigate():
+    driver.get('https://www.instagram.com/')
+    time.sleep(3)
+    
+    # Load cookies from file
+    with open('cookies.pkl', 'rb') as file:
+        cookies = pickle.load(file)
+        for cookie in cookies:
+            driver.add_cookie(cookie)
+    
+    # Refresh the page to apply cookies
+    driver.refresh()
+    time.sleep(5)
+
+def search_hashtag(hashtag):
+    driver.get(f'https://www.instagram.com/explore/tags/{hashtag}/')
+    time.sleep(5)
+
+def generate_comment(caption):
+    # Preprocess caption
+    inputs = tokenizer.encode(caption, return_tensors='pt', max_length=50, truncation=True)
+    
+    # Generate comment
+    outputs = model.generate(inputs, max_length=100, num_return_sequences=1, no_repeat_ngram_size=2)
+    comment = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return comment
+
+def comment_on_posts(num_posts=5):
+    posts = driver.find_elements(By.XPATH, '//a[contains(@href, "/p/")]')
+    post_links = [post.get_attribute('href') for post in posts[:num_posts]]
+    
+    for link in post_links:
+        driver.get(link)
+        time.sleep(3)
+        
+        # Scrape the caption
+        try:
+            caption_element = driver.find_element(By.XPATH, '//div[@role="button"]//span')
+            caption = caption_element.text
+        except:
+            caption = None
+        
+        # Skip if no caption
+        if not caption:
+            print(f"No caption found for post {link}. Skipping...")
+            continue
+        
+        # Generate intelligent comment
+        comment = generate_comment(caption)
+        
+        # Click on the comment field
+        comment_field = driver.find_element(By.XPATH, '//textarea[@aria-label="Add a comment…"]')
+        comment_field.click()
+        comment_field = driver.find_element(By.XPATH, '//textarea[@aria-label="Add a comment…"]')
+        
+        # Enter comment
+        comment_field.send_keys(comment)
+        
+        # Post comment
+        comment_field.send_keys(Keys.RETURN)
+        time.sleep(3)
+
+def main():
+    load_cookies_and_navigate()
+    search_hashtag('boat')
+    comment_on_posts(num_posts=5)
+    driver.quit()
+
+if __name__ == "__main__":
+    main()
