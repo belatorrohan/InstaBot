@@ -1,0 +1,38 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
+import pickle
+
+# Initialize Chrome driver
+driver = webdriver.Chrome()
+
+# Instagram credentials
+username = 'Enter Username'
+password = 'Enter Password'
+
+def login_and_save_cookies():
+    driver.get('https://www.instagram.com/')
+    time.sleep(3)
+    
+    # Enter username
+    username_input = driver.find_element(By.NAME, 'username')
+    username_input.send_keys(username)
+    
+    # Enter password
+    password_input = driver.find_element(By.NAME, 'password')
+    password_input.send_keys(password)
+    
+    # Submit login form
+    password_input.send_keys(Keys.RETURN)
+    time.sleep(5)
+    
+    # Save cookies to a file
+    with open('cookies.pkl', 'wb') as file:
+        pickle.dump(driver.get_cookies(), file)
+    
+    print("Cookies saved.")
+    driver.quit()
+
+if __name__ == "__main__":
+    login_and_save_cookies()
